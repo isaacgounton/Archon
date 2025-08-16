@@ -65,6 +65,17 @@ class MCPServerManager:
     def _initialize_docker_client(self):
         """Initialize Docker client and get container reference."""
         try:
+            # Check if Docker socket is available (for local development or Docker-in-Docker setups)
+            import os
+            docker_socket_paths = ["/var/run/docker.sock", "//./pipe/docker_engine"]
+            docker_socket_available = any(os.path.exists(path) for path in docker_socket_paths)
+            
+            if not docker_socket_available:
+                mcp_logger.info("Docker socket not available - running in production mode without Docker management")
+                self.docker_client = None
+                self.container = None
+                return
+
             self.docker_client = docker.from_env()
             try:
                 self.container = self.docker_client.containers.get(self.container_name)
@@ -73,8 +84,9 @@ class MCPServerManager:
                 mcp_logger.warning(f"Docker container {self.container_name} not found")
                 self.container = None
         except Exception as e:
-            mcp_logger.error(f"Failed to initialize Docker client: {str(e)}")
+            mcp_logger.info(f"Docker client not available (production mode): {str(e)}")
             self.docker_client = None
+            self.container = None
 
     def _get_container_status(self) -> str:
         """Get the current status of the MCP container."""

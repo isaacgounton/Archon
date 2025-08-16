@@ -34,7 +34,16 @@ def is_internal_request(request: Request) -> bool:
     if not client_host:
         return False
 
-    # Check if it's a Docker network IP (172.16.0.0/12 range)
+    # Check if it's localhost
+    if client_host in ["127.0.0.1", "::1", "localhost"]:
+        return True
+
+    # Check if it's a Docker network IP
+    # Docker can use various private IP ranges:
+    # - 172.16.0.0/12 (172.16.0.0 - 172.31.255.255) - Default bridge network
+    # - 10.0.0.0/8 (10.0.0.0 - 10.255.255.255) - Custom networks
+    # - 192.168.0.0/16 (192.168.0.0 - 192.168.255.255) - Custom networks
+    
     if client_host.startswith("172."):
         parts = client_host.split(".")
         if len(parts) == 4:
@@ -43,11 +52,18 @@ def is_internal_request(request: Request) -> bool:
             if 16 <= second_octet <= 31:
                 logger.info(f"Allowing Docker network request from {client_host}")
                 return True
-
-    # Check if it's localhost
-    if client_host in ["127.0.0.1", "::1", "localhost"]:
+    
+    elif client_host.startswith("10."):
+        # Allow all 10.x.x.x private network IPs (commonly used by Docker)
+        logger.info(f"Allowing private network request from {client_host}")
+        return True
+    
+    elif client_host.startswith("192.168."):
+        # Allow 192.168.x.x private network IPs
+        logger.info(f"Allowing private network request from {client_host}")
         return True
 
+    logger.warning(f"Rejecting request from non-internal IP: {client_host}")
     return False
 
 
