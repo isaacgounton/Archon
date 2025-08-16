@@ -56,8 +56,7 @@ ENV PATH=/root/.local/bin:$PATH
 RUN playwright install chromium
 
 # Copy server code and tests
-COPY src/server/ src/server/
-COPY src/__init__.py src/
+COPY src/ src/
 COPY tests/ tests/
 
 # Set environment variables
