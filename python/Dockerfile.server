@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y \
 
 # Copy and install Python dependencies
 COPY requirements.server.txt .
+ENV PATH=/root/.local/bin:$PATH
 RUN pip install --user --no-cache-dir -r requirements.server.txt
 
 # Runtime stage
@@ -48,8 +49,10 @@ RUN apt-get update && apt-get install -y \
 # Copy Python packages from builder
 COPY --from=builder /root/.local /root/.local
 
-# Install Playwright browsers
+# Set PATH for installed scripts
 ENV PATH=/root/.local/bin:$PATH
+
+# Install Playwright browsers
 RUN playwright install chromium
 
 # Copy server code and tests
